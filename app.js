@@ -36,7 +36,7 @@ app.use("/uploads", express.static(path.join(__dirname, "src/uploads")));
 
 // HEALTH CHECK //
 app.get("/health", (req, res) => {
-  return res.json({ ok: true, service: "ovasight-backend", env: process.env.NODE_ENV });
+  return res.json({ ok: true, service: "diaspora-backend", env: process.env.NODE_ENV });
 });
 
 // USE ROUTES //
