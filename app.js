@@ -34,7 +34,7 @@ app.use(bodyParser.json({ limit: "2mb" }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // serve uploaded files
-app.use("/uploads", express.static(path.join(__dirname, "src/uploads")));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // HEALTH CHECK //
 app.get("/health", (req, res) => {

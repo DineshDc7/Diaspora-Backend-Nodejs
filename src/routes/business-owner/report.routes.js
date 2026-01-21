@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const path = require("path");
+const fs = require("fs");
 const multer = require("multer");
 
 const requireAuth = require("../../middlewares/requireAuth");
@@ -13,10 +14,14 @@ const {
 } = require("../../controllers/business-owner/report.controller");
 
 
-// Storage: /src/uploads/reports
+// Storage: <project-root>/uploads/reports
+// Use process.cwd() so we don't end up with duplicated /src/src/... paths in production.
+const REPORTS_UPLOAD_DIR = path.join(process.cwd(), "uploads", "reports");
+fs.mkdirSync(REPORTS_UPLOAD_DIR, { recursive: true });
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../../uploads/reports"));
+    cb(null, REPORTS_UPLOAD_DIR);
   },
   filename: (req, file, cb) => {
     const safeName = file.originalname.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9._-]/g, "");
@@ -32,7 +37,14 @@ function fileFilter(req, file, cb) {
   cb(null, true);
 }
 
-const upload = multer({ storage, fileFilter });
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    // 10MB photo, 100MB video
+    fileSize: 100 * 1024 * 1024,
+  },
+});
 
 // Fields expected from form
 const uploadFields = upload.fields([
