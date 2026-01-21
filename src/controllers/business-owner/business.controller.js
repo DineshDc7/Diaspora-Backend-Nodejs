@@ -1,4 +1,4 @@
-const { Business } = require("../../models");
+const { Business, User } = require("../../models");
 const { OK, FAIL } = require("../../utils/response");
 
 exports.getMyBusinesses = async (req, res) => {
@@ -16,6 +16,14 @@ exports.getMyBusinesses = async (req, res) => {
         "ownerUserId",
         "createdAt",
         "updatedAt",
+      ],
+      include: [
+        {
+          model: User,
+          as: "ownerUser",
+          attributes: ["id", "name", "email", "mobile", "role", "isActive"],
+          required: false,
+        },
       ],
       order: [["createdAt", "DESC"]],
     });
