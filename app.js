@@ -11,9 +11,11 @@ const authRoutes = require("./src/routes/auth.routes");
 const pingRoutes = require("./src/routes/ping.routes");
 const adminUserRoutes = require("./src/routes/admin/user.routes");
 const adminBusinessRoutes = require("./src/routes/admin/business.routes");
-const businessOwnerReportRoutes = require("./src/routes/business-owner/report.routes");
 const adminReportRoutes = require("./src/routes/admin/report.routes");
 const adminDashboardRoutes = require("./src/routes/admin/dashboard.routes");
+const businessOwnerReportRoutes = require("./src/routes/business-owner/report.routes");
+const businessOwnerBusinessRoutes = require("./src/routes/business-owner/business.routes");
+const businessOwnerDashboardRoutes = require("./src/routes/business-owner/dashboard.routes");
 
 
 // APP INITIALIZE //
@@ -47,7 +49,8 @@ app.use("/admin", adminBusinessRoutes);
 app.use("/admin", adminReportRoutes);
 app.use("/admin", adminDashboardRoutes);
 app.use("/business-owner", businessOwnerReportRoutes);
-
+app.use("/business-owner", businessOwnerBusinessRoutes);
+app.use("/business-owner", businessOwnerDashboardRoutes);
 
 // 404 NOT FOUND //
 app.use((req, res) => {

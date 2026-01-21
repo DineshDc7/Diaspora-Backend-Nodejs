@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const { Business } = require("../../models");
+const { Business, User } = require("../../models");
 const { OK, FAIL } = require("../../utils/response");
 
 exports.getBusinesses = async (req, res) => {
@@ -32,11 +32,20 @@ exports.getBusinesses = async (req, res) => {
         "category",
         "city",
         "isActive",
+        "ownerUserId",
         "createdAt",
+      ],
+      include: [
+        {
+          model: User,
+          as: "ownerUser",
+          attributes: ["id", "name", "email", "mobile"],
+        },
       ],
       limit,
       offset,
       order: [["createdAt", "DESC"]],
+      distinct: true,
     });
 
     return OK(res, "businesses_list", {
@@ -59,7 +68,7 @@ exports.getBusinesses = async (req, res) => {
 
 exports.createBusiness = async (req, res) => {
   try {
-    const { businessName, ownerName, ownerPhone, category, city } = req.body;
+    const { businessName, ownerName, ownerPhone, category, city, ownerUserId } = req.body;
 
     if (!businessName || typeof businessName !== "string") {
       return FAIL(res, "Business name is required", "VALIDATION_BUSINESS_NAME_REQUIRED", 400);
@@ -77,12 +86,34 @@ exports.createBusiness = async (req, res) => {
       return FAIL(res, "City is required", "VALIDATION_CITY_REQUIRED", 400);
     }
 
+    let finalOwnerUserId = null;
+
+    // Optional: assign business to a BUSINESS_OWNER user at creation time
+    if (ownerUserId !== undefined && ownerUserId !== null && ownerUserId !== "") {
+      const parsedOwnerId = parseInt(ownerUserId, 10);
+      if (!parsedOwnerId) {
+        return FAIL(res, "Invalid ownerUserId", "VALIDATION_OWNER_ID_INVALID", 400);
+      }
+
+      const ownerUser = await User.findByPk(parsedOwnerId);
+      if (!ownerUser) {
+        return FAIL(res, "User not found", "USER_NOT_FOUND", 404);
+      }
+
+      if (ownerUser.role !== "BUSINESS_OWNER") {
+        return FAIL(res, "User is not a business owner", "USER_NOT_BUSINESS_OWNER", 400);
+      }
+
+      finalOwnerUserId = ownerUser.id;
+    }
+
     const business = await Business.create({
       businessName: businessName.trim(),
       ownerName: ownerName.trim(),
       ownerPhone: ownerPhone ? String(ownerPhone).trim() : null,
       category: category.trim(),
       city: city.trim(),
+      ownerUserId: finalOwnerUserId,
       isActive: true,
     });
 
@@ -97,6 +128,10 @@ exports.createBusiness = async (req, res) => {
           ownerPhone: business.ownerPhone,
           category: business.category,
           city: business.city,
+          ownerUserId: business.ownerUserId,
+          ownerUser: finalOwnerUserId
+            ? { id: finalOwnerUserId }
+            : null,
           isActive: business.isActive,
           createdAt: business.createdAt,
         },
@@ -125,8 +160,16 @@ exports.getBusinessById = async (req, res) => {
         "category",
         "city",
         "isActive",
+        "ownerUserId",
         "createdAt",
         "updatedAt",
+      ],
+      include: [
+        {
+          model: User,
+          as: "ownerUser",
+          attributes: ["id", "name", "email", "mobile"],
+        },
       ],
     });
 
@@ -214,13 +257,72 @@ exports.updateBusiness = async (req, res) => {
 exports.getBusinessOptions = async (req, res) => {
   try {
     const businesses = await Business.findAll({
-      attributes: ["id", "businessName"],
+      attributes: ["id", "businessName", "category"],
       order: [["businessName", "ASC"]],
     });
 
     return OK(res, "business_options", { businesses });
   } catch (err) {
     console.error("admin getBusinessOptions error:", err);
+    return FAIL(res, "server error", "SERVER_ERROR", 500);
+  }
+};
+
+exports.assignBusinessOwner = async (req, res) => {
+  try {
+    const businessId = parseInt(req.params.id, 10);
+    if (!businessId) {
+      return FAIL(res, "Invalid business id", "VALIDATION_ID_INVALID", 400);
+    }
+
+    const { ownerUserId } = req.body;
+
+    // Allow unassign
+    if (ownerUserId === null) {
+      const business = await Business.findByPk(businessId);
+      if (!business) {
+        return FAIL(res, "Business not found", "BUSINESS_NOT_FOUND", 404);
+      }
+
+      business.ownerUserId = null;
+      await business.save();
+
+      return OK(res, "business_owner_unassigned", { businessId });
+    }
+
+    const ownerId = parseInt(ownerUserId, 10);
+    if (!ownerId) {
+      return FAIL(res, "Invalid ownerUserId", "VALIDATION_OWNER_ID_INVALID", 400);
+    }
+
+    const business = await Business.findByPk(businessId);
+    if (!business) {
+      return FAIL(res, "Business not found", "BUSINESS_NOT_FOUND", 404);
+    }
+
+    const owner = await User.findByPk(ownerId);
+    if (!owner) {
+      return FAIL(res, "User not found", "USER_NOT_FOUND", 404);
+    }
+
+    if (owner.role !== "BUSINESS_OWNER") {
+      return FAIL(res, "User is not a business owner", "USER_NOT_BUSINESS_OWNER", 400);
+    }
+
+    business.ownerUserId = ownerId;
+    await business.save();
+
+    return OK(res, "business_owner_assigned", {
+      businessId,
+      owner: {
+        id: owner.id,
+        name: owner.name,
+        email: owner.email,
+        mobile: owner.mobile,
+      },
+    });
+  } catch (err) {
+    console.error("assignBusinessOwner error:", err);
     return FAIL(res, "server error", "SERVER_ERROR", 500);
   }
 };

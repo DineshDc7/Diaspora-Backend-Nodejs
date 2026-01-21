@@ -9,6 +9,10 @@ const Report = require("./Report");
 User.hasMany(RefreshToken, { foreignKey: "userId", as: "refreshTokens" });
 RefreshToken.belongsTo(User, { foreignKey: "userId", as: "user" });
 
+// User (BUSINESS_OWNER) ↔ Businesses (ownership)
+User.hasMany(Business, { foreignKey: "ownerUserId", as: "ownedBusinesses" });
+Business.belongsTo(User, { foreignKey: "ownerUserId", as: "ownerUser" });
+
 // Business ↔ Reports
 Business.hasMany(Report, { foreignKey: "businessId", as: "reports" });
 Report.belongsTo(Business, { foreignKey: "businessId", as: "business" });
@@ -30,7 +34,7 @@ async function testDbConnection() {
 async function syncDb() {
   try {
     // For now: create tables if not exist (safe for early dev)
-    await sequelize.sync({  });//alter: true
+    await sequelize.sync({ }); // alter: true
     console.log("✅ DB synced successfully");
   } catch (err) {
     console.error("❌ DB sync failed:", err.message);

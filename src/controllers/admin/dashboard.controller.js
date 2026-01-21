@@ -150,11 +150,25 @@ exports.getAdminDashboardOverview = async (req, res) => {
       limit: 5,
     });
 
-    const recentReports = await Report.findAll({
-      attributes: ["id", "businessId", "createdByUserId", "reportType", "data", "createdAt"],
-      order: [["createdAt", "DESC"]],
-      limit: 5,
-    });
+  const recentReports = await Report.findAll({
+    attributes: ["id", "businessId", "createdByUserId", "reportType", "data", "createdAt"],
+    include: [
+      {
+        model: Business,
+        as: "business", // ✅ must match models/index.js
+        attributes: ["id", "businessName", "category", "city", "ownerName", "ownerPhone"],
+        required: false,
+      },
+      {
+        model: User,
+        as: "createdBy", // ✅ must match models/index.js
+        attributes: ["id", "name", "email", "mobile", "role", "isActive"],
+        required: false,
+      },
+    ],
+    order: [["createdAt", "DESC"]],
+    limit: 5,
+  });
 
     const recentUsers = await User.findAll({
       attributes: ["id", "name", "email", "mobile", "role", "isActive", "createdAt"],

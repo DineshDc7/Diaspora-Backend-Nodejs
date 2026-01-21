@@ -7,10 +7,13 @@ const {
   getUsers,
   createUser,
   updateUser,
+  updateUserStatus,
   getUserStats,
   getUserById,
   getUsersOverview,
+  getUserOptions,
 } = require("../../controllers/admin/user.controller");
+
 
 // LIST
 router.get("/users", requireAuth, requireRole("ADMIN"), getUsers);
@@ -23,6 +26,12 @@ router.get("/users/stats", requireAuth, requireRole("ADMIN"), getUserStats);
 
 // OVERVIEW (static route must come before :id)
 router.get("/users/overview", requireAuth, requireRole("ADMIN"), getUsersOverview);
+
+// GET /admin/users/options?role=BUSINESS_OWNER
+router.get("/users/options", requireAuth, requireRole("ADMIN"), getUserOptions);
+
+// PATCH /admin/users/:id/status
+router.patch("/users/:id/status", requireAuth, requireRole("ADMIN"), updateUserStatus);
 
 // DETAILS (removed param regex to fix Express 5 crash)
 router.get("/users/:id", requireAuth, requireRole("ADMIN"), getUserById);

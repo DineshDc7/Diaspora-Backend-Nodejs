@@ -6,9 +6,10 @@ const requireRole = require("../../middlewares/requireRole");
 const {
   getBusinesses,
   createBusiness,
-  getBusinessOptions,
   getBusinessById,
   updateBusiness,
+  getBusinessOptions,
+  assignBusinessOwner,
 } = require("../../controllers/admin/business.controller");
 
 // LIST
@@ -19,6 +20,14 @@ router.post("/businesses", requireAuth, requireRole("ADMIN"), createBusiness);
 
 // ✅ OPTIONS (must come before :id)
 router.get("/businesses/options", requireAuth, requireRole("ADMIN"), getBusinessOptions);
+
+// PUT /admin/businesses/:id/assign-owner
+router.put(
+  "/businesses/:id/assign-owner",
+  requireAuth,
+  requireRole("ADMIN"),
+  assignBusinessOwner
+);
 
 // DETAILS
 router.get("/businesses/:id", requireAuth, requireRole("ADMIN"), getBusinessById);

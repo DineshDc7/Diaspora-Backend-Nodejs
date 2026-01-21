@@ -6,6 +6,8 @@ const Business = sequelize.define(
   {
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
 
+    ownerUserId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
+
     businessName: { type: DataTypes.STRING(150), allowNull: false },
 
     ownerName: { type: DataTypes.STRING(120), allowNull: false },
@@ -25,6 +27,7 @@ const Business = sequelize.define(
       { fields: ["businessName"] },
       { fields: ["category"] },
       { fields: ["city"] },
+      { fields: ["ownerUserId"] },
       { fields: ["isActive"] },
     ],
   }

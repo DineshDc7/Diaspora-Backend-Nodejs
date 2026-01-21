@@ -8,6 +8,7 @@ const requireRole = require("../../middlewares/requireRole");
 const {
   createReport,
   getReports,
+  getReportsStats,
   getReportById,
 } = require("../../controllers/business-owner/report.controller");
 
@@ -54,6 +55,14 @@ router.get(
   requireAuth,
   requireRole("BUSINESS_OWNER"),
   getReports
+);
+
+// GET /business-owner/reports/stats
+router.get(
+  "/reports/stats",
+  requireAuth,
+  requireRole("BUSINESS_OWNER"),
+  getReportsStats
 );
 
 // GET /business-owner/reports/:id

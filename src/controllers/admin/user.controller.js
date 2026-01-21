@@ -76,6 +76,10 @@ exports.getUsers = async (req, res) => {
         page,
         limit,
         totalPages: Math.ceil(count / limit),
+        hasPrevPage: page > 1,
+        hasNextPage: page < Math.ceil(count / limit),
+        prevPage: page > 1 ? page - 1 : null,
+        nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
       },
       appliedFilters: {
         tab: tab || "all",
@@ -354,6 +358,79 @@ exports.getUsersOverview = async (req, res) => {
     });
   } catch (err) {
     console.error("admin getUsersOverview error:", err);
+    return FAIL(res, "server error", "SERVER_ERROR", 500);
+  }
+};
+
+exports.getUserOptions = async (req, res) => {
+  try {
+    const roleParam = req.query.role ? String(req.query.role).trim().toUpperCase() : "";
+
+    const allowedRoles = ["ADMIN", "INVESTOR", "BUSINESS_OWNER"];
+
+    const where = {};
+    if (roleParam) {
+      if (!allowedRoles.includes(roleParam)) {
+        return FAIL(res, "Invalid role", "VALIDATION_ROLE_INVALID", 400);
+      }
+      where.role = roleParam;
+    }
+
+    const users = await User.findAll({
+      where,
+      attributes: ["id", "name", "email", "mobile", "role", "isActive", "createdAt"],
+      order: [["name", "ASC"]],
+      limit: 500, // dropdown safety limit
+    });
+
+    return OK(res, "user_options", { users });
+  } catch (err) {
+    console.error("admin getUserOptions error:", err);
+    return FAIL(res, "server error", "SERVER_ERROR", 500);
+  }
+};
+
+// PATCH /admin/users/:id/status
+// Body: { isActive: true | false }
+exports.updateUserStatus = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!id) {
+      return FAIL(res, "Invalid user id", "VALIDATION_ID_INVALID", 400);
+    }
+
+    const { isActive } = req.body;
+
+    if (isActive === undefined) {
+      return FAIL(res, "isActive is required", "VALIDATION_IS_ACTIVE_REQUIRED", 400);
+    }
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return FAIL(res, "User not found", "USER_NOT_FOUND", 404);
+    }
+
+    // Safety: admin should not disable their own account
+    if (req.user && req.user.id === user.id && isActive === false) {
+      return FAIL(res, "You cannot disable your own account", "AUTH_SELF_DISABLE_FORBIDDEN", 403);
+    }
+
+    user.isActive = Boolean(isActive);
+    await user.save();
+
+    return OK(res, "user_status_updated", {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        role: user.role,
+        isActive: user.isActive,
+        updatedAt: user.updatedAt,
+      },
+    });
+  } catch (err) {
+    console.error("admin updateUserStatus error:", err);
     return FAIL(res, "server error", "SERVER_ERROR", 500);
   }
 };
